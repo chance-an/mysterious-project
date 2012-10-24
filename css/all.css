@@ -4201,3 +4201,6 @@ a.badge:hover {
 body {
   background: #eb952e;
 }
+header canvas {
+  position: absolute;
+}

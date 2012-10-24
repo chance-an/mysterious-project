@@ -172,7 +172,7 @@
                     };
                 }
 
-                this._$target[0].getContext("2d").scale(2, 2);
+                this._$target[0].getContext("2d").scale(ratioHorizontal, ratioVertical);
 
                 var playFrame = _.bind(function (){
                     if(!this._detectVisible()){
