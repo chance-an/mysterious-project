@@ -17,7 +17,8 @@
     function initialize(){
         var animation = new APP.Animation({
             videoSources: [
-                {type: 'video/ogg', src: 'video/combine.theora.ogv'},
+//                {type: 'video/ogg', src: 'video/combine.theora.ogv'},
+                {type: 'video/webm', src: 'video/combine.webmvp8.webm'},
                 {type: 'video/mp4', src: 'video/combine.mp4'}
             ],
 
