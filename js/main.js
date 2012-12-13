@@ -81,56 +81,48 @@
                 });
 
                 this._$video = $video;
-                $video.on('loadedmetadata', _.bind(this._checkLoaded, this));
+                $video.on('loadedmetadata', _.bind(this._onMetaDataReady, this));
                 $video.insertBefore($(this.options.target)).hide();
 
                 this._$buffer = $('<canvas/>').insertBefore($(this.options.target)).hide();
-                this._startup();
             },
 
-            _startup: function(){
+            _onMetaDataReady: function(){
                 var $video = this._$video;
                 var video = $video[0];
 
-                this._loaded.done(_.bind(function(){
-                    //retrieve video dimension
-                    this.videoWidth = $video.prop('videoWidth');
-                    this.videoHeight = $video.prop('videoHeight');
+                //retrieve video dimension
+                this.videoWidth = this._$video.prop('videoWidth');
+                this.videoHeight = this._$video.prop('videoHeight');
 
-                    this._$buffer.attr({
-                        'width': this.videoWidth,
-                        'height': this.videoHeight
-                    });
-                }, this)).done(
-                    /* when video is fully loaded, play the video
-                     and resolve compatibility issues for loop support */
-                    _.bind(function(){
-                        if(typeof video.loop === 'boolean'){
-                            video.loop = true;
-                        }else{
-                            // loop property not supported
-                            $video.on('ended', function () {
-                                video.currentTime = 0;
-                                video.play();
-                            });
-                        }
+                this._$buffer.attr({
+                    'width': this.videoWidth,
+                    'height': this.videoHeight
+                });
+
+                /* resolve compatibility issues for loop support */
+                if(typeof video.loop === 'boolean'){
+                    video.loop = true;
+                }else{
+                    // loop property not supported
+                    $video.on('ended', function () {
+                        video.currentTime = 0;
                         video.play();
-                    }, this)).done(
-                    /* also start rendering the canvas*/
-                    _.bind(this._play, this)
-                );
+                    });
+                }
+
+                this._checkLoaded();
+                this._play();
             },
 
             _checkLoaded: function(){
                 var $video = this._$video;
                 var videoDuration = $video.prop('duration');
-
                 var timer = setInterval(_.bind(function(){
-                    if($video.prop('readyState')){
+                    var readyState = $video.prop('readyState');
+                    if(readyState > 1 && $video.prop("buffered").length > 0){ // 1 = HTMLMediaElement.HAVE_METADATA
                         var buffered = $video.prop("buffered").end(0);
-                        var percent = 100 * buffered / videoDuration;
-
-                        //If finished buffering buffering quit calling it
+                        //If finished buffering quit calling it
                         if (buffered >= videoDuration) {
                             clearInterval(timer);
                             this._loaded.resolve(); //signal deferred object
@@ -140,8 +132,6 @@
             },
 
             _play: function(){
-                console.log('to play');
-
                 var targetWidth = this._$target.width();
                 var targetHeight = this._$target.height();
                 var bufferContext = this._$buffer[0].getContext("2d");
@@ -172,7 +162,6 @@
                         canvasContext.putImageData(imageData, 0, 0, 0, 0, width, height);
                     };
                 }
-
                 this._$target[0].getContext("2d").scale(ratioHorizontal, ratioVertical);
 
                 var playFrame = _.bind(function (){
@@ -192,10 +181,24 @@
                     renderFunction(image);
                 }, this);
 
+                video.play(); //play the video, and the video will start loading only the data
+                // for the current and near-future frames
                 setInterval(playFrame, 40);
             },
 
             _detectVisible: function(){
+                var video = this._$video[0];
+
+                if ( video.paused ){
+                    return false
+                }
+
+                if( video.readyState <= 1){  // 1 = HTMLMediaElement.HAVE_METADATA
+                    //this includes 0 = HAVE_NOTHING ; 1 = HTMLMediaElement.HAVE_METADATA
+                    //which means the video is probably buffering, so don't play a frame for such occasions
+                    return false;
+                }
+
                 return true;
             }
         });
