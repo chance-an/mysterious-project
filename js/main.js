@@ -24,6 +24,14 @@
 
             target: 'body > header canvas'
         });
+
+        bindEvents();
+    }
+
+    function bindEvents(){
+
+
+        Crystal.bindEvents();
     }
 
     $(document).ready(initialize);
@@ -204,5 +212,91 @@
         });
         return Animation;
     })();
+
+    APP.UI = (function(){
+
+        return {
+            getViewportSize: function(){
+                return {
+                    width: document.documentElement.clientWidth,
+                    height: document.documentElement.clientHeight
+
+                }
+            },
+
+            getViewportCenter: function(){
+                return {
+                    x : document.documentElement.clientWidth /2,
+                    y : document.documentElement.clientHeight / 2
+                }
+            }
+        }
+    })();
+
+
+    var Crystal = function(){
+        var STATES = {
+            'fixed': {
+                id : 'fixed',
+                isLayoutChanged: function(){
+                    var $mainContainer = $('#main-container');
+                    var $crystal = $('#crystal');
+                    var viewportSize = APP.UI.getViewportSize();
+                    var scrollPositionLimit = $mainContainer.offset().top + $crystal.height() / 2 -
+                        viewportSize.height / 2;
+
+                    return $(document).scrollTop() < scrollPositionLimit;
+                },
+
+                changeTo: function(){
+                    var $crystal = $('.crystal-wrapper');
+                    $crystal.css({
+                        position: 'fixed',
+                        top: APP.UI.getViewportSize().height / 2 - $crystal.height() / 2
+                    })
+                }
+            },
+
+            'static' : {
+                id : 'static',
+                isLayoutChanged: function(){
+                    var scrollPosition = $(document).scrollTop();
+                    var $crystal = $('#crystal');
+
+                    var viewportSize = APP.UI.getViewportSize();
+                    var yCrystalCenter = $crystal.offset().top + $crystal.height() / 2;
+                    var scrollPositionLimit = yCrystalCenter - viewportSize.height / 2;
+
+                    return scrollPosition > scrollPositionLimit;
+                },
+
+                changeTo: function(){
+                    var $crystal = $('.crystal-wrapper');
+                    $crystal.css({
+                        position: 'absolute',
+                        top: 0
+                    });
+                }
+            }
+        };
+
+        var state = STATES.static;
+
+        function positionCrystal(){
+            if(state.isLayoutChanged()){
+                state = state === STATES.fixed ? STATES.static : STATES.fixed;
+                state.changeTo();
+            }
+        }
+
+        function bindEvents(){
+            $(window).on('scroll', _.debounce(Crystal.positionCrystal, 10) );
+        }
+
+        return {
+            positionCrystal : positionCrystal,
+            bindEvents: bindEvents
+        }
+    }();
 
 }());
