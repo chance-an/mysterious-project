@@ -26,6 +26,8 @@
         });
 
         bindEvents();
+
+        POSTS.initialize();
     }
 
     function bindEvents(){
@@ -226,9 +228,13 @@
 
             getViewportCenter: function(){
                 return {
-                    x : document.documentElement.clientWidth /2,
+                    x : document.documentElement.clientWidth / 2,
                     y : document.documentElement.clientHeight / 2
                 }
+            },
+
+            getTemplateByName: function(name){
+                return $('script#template-' + name).html();
             }
         }
     })();
@@ -299,4 +305,44 @@
         }
     }();
 
+
+    var POSTS = function(){
+
+        var _posts = [];
+
+        function initialize(){
+            var deferred = new $.Deferred();
+
+            loadPost().pipe(function(){
+                render(_posts);
+            });
+
+            return deferred;
+        }
+
+        function loadPost(){
+            return $.ajax('data/posts.json').done(function(data){
+                _posts = _posts.concat(data);
+            });
+        }
+
+        function render(posts){
+            var template = _.template(APP.UI.getTemplateByName('post'));
+
+            var $lanes = $("#post-list .lane");
+            var offset = $lanes.children().length;
+            var height = 100;
+            _.each(posts, function(post){
+                var $lane = $($lanes.get(offset++ % 2));
+                var $element = $(template(post));
+                $element.height(height);
+                height+= 100;
+                $lane.append($element);
+            });
+        }
+
+        return {
+            initialize: initialize
+        }
+    }();
 }());
