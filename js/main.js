@@ -8,7 +8,7 @@
     APP: false
  */
 
-(function(){
+var APP = (function(APP){
     'use strict';
 
     var count = 120;
@@ -27,20 +27,16 @@
 
         bindEvents();
 
-        POSTS.initialize();
+        APP.POSTS.initialize();
     }
 
     function bindEvents(){
-
-
         Crystal.bindEvents();
     }
 
     $(document).ready(initialize);
 
-    BackboneMVC.namespace('APP');
-
-    APP.Animation = (function(){
+    var Animation = (function(){
 
         var CHECK_INTERVAL = 500;
 
@@ -215,7 +211,7 @@
         return Animation;
     })();
 
-    APP.UI = (function(){
+    var UI = (function(){
 
         return {
             getViewportSize: function(){
@@ -238,7 +234,6 @@
             }
         }
     })();
-
 
     var Crystal = function(){
         var STATES = {
@@ -299,50 +294,27 @@
             $(window).on('scroll', _.debounce(Crystal.positionCrystal, 10) );
         }
 
+        function getOccupation(){
+            var $crystal = $('#crystal');
+
+            return {
+                top: $crystal.offset().top,
+                bottom: $crystal.offset().top + $crystal.height()
+            }
+        }
+
+
         return {
             positionCrystal : positionCrystal,
-            bindEvents: bindEvents
+            bindEvents: bindEvents,
+            getOccupation: getOccupation
         }
     }();
 
+    return _.extend(APP, {
+        Crystal: Crystal,
+        UI: UI,
+        Animation: Animation
 
-    var POSTS = function(){
-
-        var _posts = [];
-
-        function initialize(){
-            var deferred = new $.Deferred();
-
-            loadPost().pipe(function(){
-                render(_posts);
-            });
-
-            return deferred;
-        }
-
-        function loadPost(){
-            return $.ajax('data/posts.json').done(function(data){
-                _posts = _posts.concat(data);
-            });
-        }
-
-        function render(posts){
-            var template = _.template(APP.UI.getTemplateByName('post'));
-
-            var $lanes = $("#post-list .lane");
-            var offset = $lanes.children().length;
-            var height = 100;
-            _.each(posts, function(post){
-                var $lane = $($lanes.get(offset++ % 2));
-                var $element = $(template(post));
-                $element.height(height);
-                height+= 100;
-                $lane.append($element);
-            });
-        }
-
-        return {
-            initialize: initialize
-        }
-    }();
-}());
+    });
+}(APP || {}));
