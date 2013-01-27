@@ -282,6 +282,7 @@ var APP = (function(APP){
         };
 
         var state = STATES.static;
+        var bleedFringe = 10;
 
         function positionCrystal(){
             if(state.isLayoutChanged()){
@@ -296,10 +297,16 @@ var APP = (function(APP){
 
         function getArea(){
             var $crystal = $('#crystal');
+            var width = $crystal.width() + bleedFringe * 2;
+            var top = $crystal.offset().top - bleedFringe;
+            var height = $crystal.height() + bleedFringe * 2;
+            var left = $crystal.offset().left - bleedFringe;
 
             return {
-                top: $crystal.offset().top,
-                bottom: $crystal.offset().top + $crystal.height()
+                top: top,
+                bottom: top + height,
+                left : left,
+                right : left + width
             }
         }
 
