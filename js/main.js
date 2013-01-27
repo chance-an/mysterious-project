@@ -294,7 +294,7 @@ var APP = (function(APP){
             $(window).on('scroll', _.debounce(Crystal.positionCrystal, 10) );
         }
 
-        function getOccupation(){
+        function getArea(){
             var $crystal = $('#crystal');
 
             return {
@@ -307,7 +307,7 @@ var APP = (function(APP){
         return {
             positionCrystal : positionCrystal,
             bindEvents: bindEvents,
-            getOccupation: getOccupation
+            getArea: getArea
         }
     }();
 

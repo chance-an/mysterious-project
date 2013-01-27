@@ -106,7 +106,7 @@ var APP = (function(APP){
         }
 
         function bindEvents(){
-            $(window).on('scroll', _.debounce(calculateOverlapped, 10) );
+            $(window).on('scroll', _.debounce(reshapePosts, 10) );
         }
 
         function deploy(posts){
@@ -115,31 +115,32 @@ var APP = (function(APP){
             });
         }
 
-        function calculateOverlapped(){
+        function reshapePosts(){
             //reset all posts //TODO only reset previous changed ones
             _posts.each(function(post){
                 post.view.reset();
             });
 
             var $postList = $("#post-list");
-            var $leftLanePosts = $postList.find('.lane:first-child .post');
-            var leftLaneLength = $leftLanePosts.length;
-            var overlap = binarySearchForOverlap($leftLanePosts, 0, leftLaneLength - 1);
 
-            _.map(overlap, function(index){
-                $($leftLanePosts[index]).data('model').view.update();
-            });
+            var lanesSelector = ['.lane:nth-child(1) .post', '.lane:nth-child(2) .post'];
+            _.each(lanesSelector, function(laneSelector){
+                var $lanePosts = $postList.find(laneSelector);
+                var overlappedPostsIndexes = binarySearchForOverlap($lanePosts , 0, $lanePosts.length - 1);
 
-            var $rightLanePosts = $postList.find('.lane:last-child .post');
-            var rightLaneLength = $rightLanePosts.length;
-            overlap = binarySearchForOverlap($rightLanePosts, 0, rightLaneLength - 1);
-            _.map(overlap, function(index){
-                $($rightLanePosts[index]).data('model').view.update();
+                _.map(overlappedPostsIndexes, function(index){
+                    var model = $($lanePosts[index]).data('model');
+
+                    model.view.update();
+
+                    var renderingOption = calculateBlockedArea(model);
+//                    console.log(renderingOption);
+                });
             });
         }
 
         function binarySearchForOverlap($postElements, start, end){
-            var crystalBoundary = APP.Crystal.getOccupation();
+            var crystalBoundary = APP.Crystal.getArea();
 
             if(start == end){
                 return _.filter([start], function(index){
@@ -191,6 +192,33 @@ var APP = (function(APP){
             var elementBoundary = $($postElement).data('model').view.getDimension();
             return (elementBoundary.top <= overlappingElementDimension.bottom)
                 && (elementBoundary.bottom >= overlappingElementDimension.top);
+        }
+
+        function calculateBlockedArea(model){
+            var result = {
+                type : null,
+                parameter : {}
+            };
+            var crystalBoundary = APP.Crystal.getArea();
+            var elementBoundary = model.view.getDimension();
+
+            if ( crystalBoundary.top <= elementBoundary.top && crystalBoundary.bottom >= elementBoundary.bottom){
+                result.type = 'full';
+            }else if(crystalBoundary.top > elementBoundary.top && crystalBoundary.bottom < elementBoundary.bottom){
+                result.type = 'concave';
+                result.parameter.topRemaining = crystalBoundary.top - elementBoundary.top;
+                result.parameter.blocked = crystalBoundary.bottom - crystalBoundary.top;
+                result.parameter.bottomRemaining = elementBoundary.bottom - crystalBoundary.bottom;
+            }else if(crystalBoundary.bottom <= elementBoundary.bottom){
+                result.type = "top";
+                result.parameter.blocked = crystalBoundary.bottom - elementBoundary.top;
+                result.parameter.bottomRemaining = elementBoundary.bottom - crystalBoundary.bottom;
+            }else if(crystalBoundary.top >= elementBoundary.top){
+                result.type = "bottom";
+                result.parameter.topRemaining = crystalBoundary.top - elementBoundary.top;
+                result.parameter.blocked = elementBoundary.bottom - crystalBoundary.top;
+            }
+            return result;
         }
 
         return {
