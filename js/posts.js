@@ -196,6 +196,35 @@ var APP = (function(APP){
                 }
             };
 
+            var _renderBlockerFunctions = {
+                'full': function(){
+
+                },
+
+                top: function(parameters){
+                    this.$el.prepend($('<div/>').css({
+                        width: parameters.clippingSize,
+                        height: parameters.blocked
+                    }).addClass('blocker'));
+                },
+
+                concave: function(parameters){
+                    this.$el.prepend($('<div/>').css({
+                        width: parameters.clippingSize,
+                        height: parameters.blocked
+                    }).addClass('blocker'));
+
+                    this.$el.prepend($('<div/>').css({
+                        width: 0,
+                        height: parameters.topRemaining
+                    }).addClass('blocker'));
+                },
+
+                bottom: function(){
+
+                }
+            };
+
             return Backbone.View.extend({
                 el: null,
                 _dimension: null,
@@ -236,9 +265,27 @@ var APP = (function(APP){
                     this.$el.css('border-color', 'red'); //TODO refactor
                 },
 
+                addBlocker: function(){
+                    var renderingParameters = calculateBlockedArea(this.model);
+
+                    var crystalDimension = APP.Crystal.getArea();
+                    var clippingSize;
+                    if(this.$el.offset().left < crystalDimension.left){
+                        clippingSize = this.$el.offset().left + this.$el.width() - crystalDimension.left;
+                    }else{
+                        clippingSize = crystalDimension.right - this.$el.offset().left;
+                    }
+                    renderingParameters.parameter = _.extend(renderingParameters.parameter || {},
+                        {clippingSize : clippingSize});
+
+                    _renderBlockerFunctions[renderingParameters.type].call(this,
+                        renderingParameters.parameter);
+                },
+
                 reset: function(){
                     this.$el.css('border-color', 'green'); //TODO refactor
                     this.$el.find('.contour-wrapper').empty()
+                    this.$el.find('.blocker').remove()
                 },
 
                 getDimension: function(){
@@ -258,9 +305,11 @@ var APP = (function(APP){
                     return _viewTemplate;
                 }
             });
+
         }();
 
-        //--------------------------------------------
+
+        //----------------- Procedures ----------------------
         var _posts = new (Backbone.Collection.extend({
             model: PostModel
         }));
@@ -313,6 +362,9 @@ var APP = (function(APP){
             var lanesSelector = ['.lane:nth-child(1) .post', '.lane:nth-child(2) .post'];
             _.each(lanesSelector, function(laneSelector){
                 var $lanePosts = $postList.find(laneSelector);
+
+                blockContent($lanePosts);
+
                 var overlappedPostsIndexes = binarySearchForOverlap($lanePosts , 0, $lanePosts.length - 1);
 
                 _.map(overlappedPostsIndexes, function(index){
@@ -372,6 +424,49 @@ var APP = (function(APP){
             return overlapped;
         }
 
+        function binarySearchFindFirstBlocked($postElements, start, end){
+            var crystalBoundary = APP.Crystal.getArea();
+
+            if(start == end){
+                if(_isOverlap($postElements[start], crystalBoundary)){
+                    return start;
+                }
+                return null
+            }else if(start + 1 == end){
+                var blocked =  _.filter([start, end], function(index){
+                    return _isOverlap($postElements[index], crystalBoundary);
+                }); // gets the blocked indexes, can be only 1-element array or empty
+                return blocked[0]; //can be undefined
+            }
+            var middle = Math.floor( start + end ) / 2;
+
+            var middleElementBoundary = $($postElements[middle]).data('model').view.getDimension();
+            if(middleElementBoundary.bottom < crystalBoundary.top){
+                // middle element is above the overlapping object, cut first half
+                start = middle + 1;
+                return binarySearchFindFirstBlocked($postElements, start, end);
+            }
+
+            if(middleElementBoundary.top > crystalBoundary.bottom){
+                // middle element is beneath the overlapping object, cut second half
+                end = middle - 1;
+                return binarySearchFindFirstBlocked($postElements, start, end);
+            }
+
+            //if overlaps the middle element, look up to discover the first blocked post
+            var firstBlocked = middle;
+
+            //look up
+            var pointer = middle;
+            while(--pointer >= start){
+                if(_isOverlap($postElements[pointer], crystalBoundary)){
+                    firstBlocked = pointer;
+                }
+            }
+
+            return firstBlocked;
+        }
+
         function _isOverlap($postElement, overlappingElementDimension){
             var elementBoundary = $($postElement).data('model').view.getDimension();
             return (elementBoundary.top <= overlappingElementDimension.bottom)
@@ -405,9 +500,23 @@ var APP = (function(APP){
             return result;
         }
 
+        /**
+         * Insert blocked element to post
+         * @param $postList
+         */
+        function blockContent($postList){
+            var count = $postList.length;
+            //first get the first blocked post from the top by binary search
+            var firstBlocked = binarySearchFindFirstBlocked($postList, 0, count - 1);
+
+            var model = $($postList[firstBlocked]).data('model');
+            model.view.reset();
+
+            model.view.addBlocker();
+        }
+
         return {
             initialize: initialize,
-
             PostModel : PostModel,
             PostView: PostView
         }

@@ -38,6 +38,24 @@ body > .container{
   .lane{
     width: 50%;
     float: left;
+
+    .blocker {
+      border: 1px solid cyan;
+    }
+  }
+
+  .lane.left{
+    .blocker {
+      float: right;
+      clear: right;
+    }
+  }
+
+  .lane.right{
+    .blocker {
+      float: left;
+      clear: left;
+    }
   }
 
   .post{

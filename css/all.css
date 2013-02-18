@@ -4226,6 +4226,17 @@ body > .container {
   width: 50%;
   float: left;
 }
+#post-list .lane .blocker {
+  border: 1px solid cyan;
+}
+#post-list .lane.left .blocker {
+  float: right;
+  clear: right;
+}
+#post-list .lane.right .blocker {
+  float: left;
+  clear: left;
+}
 #post-list .post {
   margin-left: 3em;
   margin-right: 3em;
