@@ -37,8 +37,8 @@ requirejs.config({
 });
 
 
-requirejs(['APP/app', 'APP/animation', 'APP/crystal', 'APP/posts'],
-function(App, Animation, Crystal, Posts){
+requirejs(['APP/app', 'APP/UI', 'APP/animation', 'APP/crystal', 'APP/posts'],
+function(App, UI, Animation, Crystal, Posts){
 
 
     function bindEvents(){
@@ -57,7 +57,7 @@ function(App, Animation, Crystal, Posts){
         });
 
         bindEvents();
-
+        UI.initialize();
         Posts.initialize();
     }
 

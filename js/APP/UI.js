@@ -1,14 +1,16 @@
 define(function(){
     'use strict';
 
-    return {
-        getViewportSize: function(){
-            return {
-                width: document.documentElement.clientWidth,
-                height: document.documentElement.clientHeight
+    function getViewportSize(){
+        return {
+            width: document.documentElement.clientWidth,
+            height: document.documentElement.clientHeight
 
-            };
-        },
+        };
+    }
+
+    return {
+        getViewportSize: getViewportSize,
 
         getViewportCenter: function(){
             return {
@@ -19,6 +21,10 @@ define(function(){
 
         getTemplateByName: function(name){
             return $('script#template-' + name).html();
+        },
+
+        initialize: function(){
+            $('#main-container').width(getViewportSize().width);
         }
     };
 });
